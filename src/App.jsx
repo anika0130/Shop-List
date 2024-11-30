@@ -12,11 +12,27 @@ export default function App() {
     setItems((prevItems) => [...prevItems, item]);
   }
 
+  function deleteItems(id) {
+    setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+  }
+
+  function toggleBought(id) {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id ? { ...item, bought: !item.bought } : item
+      )
+    );
+  }
+
   return (
     <div className="app">
       <Logo />
       <Forms onAddItems={addItems} />
-      <List items={items} setItems={setItems} />
+      <List
+        items={items}
+        onDelete={deleteItems}
+        onToggleBought={toggleBought}
+      />
       <Stats items={items} />
     </div>
   );
@@ -30,10 +46,9 @@ function Forms({ onAddItems }) {
   const [description, setDescription] = useState("");
   const [quantity, setQuantity] = useState(1);
 
-  function btnSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-
-    if (!description) return;
+    if (!description.trim()) return;
 
     const newItem = {
       description,
@@ -43,14 +58,13 @@ function Forms({ onAddItems }) {
     };
     onAddItems(newItem);
 
+    // Reset form
     setDescription("");
     setQuantity(1);
   }
 
   return (
-    <form className="add-form" onSubmit={btnSubmit}>
-      {" "}
-      {/* Changed from div to form */}
+    <form className="add-form" onSubmit={handleSubmit}>
       <h3>What do you need to buy?</h3>
       <select value={quantity} onChange={(e) => setQuantity(e.target.value)}>
         {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
@@ -70,29 +84,58 @@ function Forms({ onAddItems }) {
   );
 }
 
-function List({ items, setItems }) {
-  function handleRemove(id) {
-    setItems((prevItems) => prevItems.filter((item) => item.id !== id));
-  }
+function List({ items, onDelete, onToggleBought }) {
+  const [sortBy, setSortBy] = useState("input");
+
+  let sortedItems;
+  if (sortBy === "input") sortedItems = items;
+
+  if (sortBy === "description")
+    sortedItems = items
+      .slice()
+      .sort((a, b) => a.description.localeCompare(b.description));
+
+  if (sortBy === "bought")
+    sortedItems = items
+      .slice()
+      .sort((a, b) => Number(a.bought) - Number(b.bought));
 
   return (
     <div className="list">
       <ul>
-        {items.map((item) => (
-          <Item key={item.id} item={item} onRemove={handleRemove} />
+        {sortedItems.map((item) => (
+          <Item
+            key={item.id}
+            item={item}
+            onDelete={onDelete}
+            onToggleBought={onToggleBought}
+          />
         ))}
       </ul>
+
+      <div className="actions">
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <option value="input">Sort by input order</option>
+          <option value="description">sort by description</option>
+          <option value="bought">sort by bought status</option>
+        </select>
+      </div>
     </div>
   );
 }
 
-function Item({ item, onRemove }) {
+function Item({ item, onDelete, onToggleBought }) {
   return (
     <li>
+      <input
+        type="checkbox"
+        checked={item.bought}
+        onChange={() => onToggleBought(item.id)}
+      />
       <span style={item.bought ? { textDecoration: "line-through" } : {}}>
         {item.quantity} {item.description}
       </span>
-      <button onClick={() => onRemove(item.id)}>❌</button>
+      <button onClick={() => onDelete(item.id)}>❌</button>
     </li>
   );
 }

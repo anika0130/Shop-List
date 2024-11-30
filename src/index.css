@@ -90,6 +90,7 @@ input {
 }
 
 .list ul {
+  padding: 30px;
   list-style: none;
   width: 100%;
   overflow: auto;
